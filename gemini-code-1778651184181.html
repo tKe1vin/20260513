@@ -1,34 +1,167 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
-    <title>Web3 Interaction</title>
-    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js" type="application/javascript"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web3 智能合約互動練習</title>
+    <!-- 引入 Web3.js 函式庫 -->
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #f4f7f6; 
+            display: flex; 
+            justify-content: center; 
+            padding-top: 50px;
+        }
+        .container { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 12px; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1); 
+            width: 100%; 
+            max-width: 500px; 
+        }
+        h2 { color: #333; text-align: center; }
+        button { 
+            width: 100%; padding: 12px; margin: 10px 0; 
+            cursor: pointer; background-color: #f6851b; /* MetaMask 橘色 */
+            color: white; border: none; border-radius: 6px; 
+            font-size: 16px; font-weight: bold; transition: 0.3s;
+        }
+        button:hover { background-color: #e27615; }
+        .btn-blue { background-color: #007bff; }
+        .btn-blue:hover { background-color: #0056b3; }
+        input { 
+            width: 95%; padding: 12px; margin: 10px 0; 
+            border: 1px solid #ccc; border-radius: 6px; font-size: 16px;
+        }
+        .status-box { 
+            margin-top: 20px; padding: 15px; 
+            background: #e9ecef; border-radius: 6px; 
+            font-size: 14px; color: #555; word-break: break-all;
+        }
+        hr { border: 0; height: 1px; background: #eee; margin: 20px 0; }
+    </style>
 </head>
 <body>
-    <h1>我的智能合約互動頁面</h1>
-    <p>目前合約數值: <span id="storedData">讀取中...</span></p>
-    
-    <input type="number" id="newValue" placeholder="輸入新數字">
-    <button onclick="updateValue()">更新數值</button>
+
+    <div class="container">
+        <h2>🦊 Web3 合約互動測試</h2>
+        
+        <!-- 區塊 1: 連結錢包 -->
+        <div>
+            <button onclick="connectWallet()">1. 連結 MetaMask 錢包</button>
+            <p>目前登入帳號: <br><strong id="account" style="color: #007bff;">尚未連結</strong></p>
+        </div>
+
+        <hr>
+
+        <!-- 區塊 2: 讀取數值 -->
+        <div>
+            <h3>📖 讀取合約資料</h3>
+            <button class="btn-blue" onclick="getValue()">讀取當前變數</button>
+            <p>合約內的數值為: <strong id="contractValue" style="font-size: 20px; color: red;">?</strong></p>
+        </div>
+
+        <hr>
+
+        <!-- 區塊 3: 寫入數值 -->
+        <div>
+            <h3>✍️ 改變合約變數 (需付 Gas)</h3>
+            <input type="number" id="newValue" placeholder="請輸入新的數字...">
+            <button class="btn-blue" onclick="setValue()">寫入新數值</button>
+        </div>
+
+        <!-- 狀態顯示區 -->
+        <div class="status-box" id="statusMessage">系統狀態：等待操作...</div>
+    </div>
 
     <script>
-        const contractAddress = "你的合約地址";
-        const abi = [ /* 貼上你的 ABI */ ];
+        // ==========================================
+        // ⚠️ 作業修改區：請修改以下兩個變數 (Address & ABI)
+        // ==========================================
+        
+        // 1. 貼上你在 Remix 部署後的 Contract Address
+        const contractAddress = "0x請在這裡貼上你的合約地址"; 
 
-        async function updateValue() {
-            // 1. 連接 MetaMask
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
-            await provider.send("eth_requestAccounts", []);
-            const signer = provider.getSigner();
+        // 2. 貼上你在 Remix 編譯出來的 ABI (這裡放的是範例，請全選覆蓋掉)
+        const contractABI = [
+            {
+                "inputs": [{"internalType": "uint256","name": "x","type": "uint256"}],
+                "name": "set",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "get",
+                "outputs": [{"internalType": "uint256","name": "","type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ];
+        // ==========================================
+
+        let web3;
+        let userAccount;
+        let myContract;
+
+        // 連結錢包功能
+        async function connectWallet() {
+            if (typeof window.ethereum !== 'undefined') {
+                web3 = new Web3(window.ethereum);
+                try {
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    userAccount = accounts[0];
+                    document.getElementById('account').innerText = userAccount;
+                    
+                    // 初始化合約
+                    myContract = new web3.eth.Contract(contractABI, contractAddress);
+                    document.getElementById('statusMessage').innerText = "狀態：✅ 錢包連結成功！";
+                } catch (error) {
+                    document.getElementById('statusMessage').innerText = "狀態：❌ 使用者拒絕連結錢包。";
+                }
+            } else {
+                alert('請先安裝 MetaMask 擴充功能！');
+            }
+        }
+
+        // 讀取變數功能 (對應合約的 get 函數)
+        async function getValue() {
+            if (!myContract) return alert("請先連結錢包！");
+            try {
+                document.getElementById('statusMessage').innerText = "狀態：讀取中...";
+                // 注意：這裡的 .get() 必須和你的合約函數名稱一致
+                const result = await myContract.methods.get().call();
+                document.getElementById('contractValue').innerText = result;
+                document.getElementById('statusMessage').innerText = "狀態：✅ 讀取成功！";
+            } catch (error) {
+                console.error(error);
+                document.getElementById('statusMessage').innerText = "狀態：❌ 讀取失敗，請確認合約地址與網路是否正確。";
+            }
+        }
+
+        // 改變變數功能 (對應合約的 set 函數)
+        async function setValue() {
+            if (!myContract) return alert("請先連結錢包！");
             
-            // 2. 初始化合約物件
-            const contract = new ethers.Contract(contractAddress, abi, signer);
-            
-            // 3. 呼叫合約函數
-            const value = document.getElementById('newValue').value;
-            const tx = await contract.set(value);
-            await tx.wait(); // 等待交易確認
-            alert("更新成功！");
+            const newValue = document.getElementById('newValue').value;
+            if (newValue === "") return alert("請輸入數值！");
+
+            try {
+                document.getElementById('statusMessage').innerText = "狀態：⏳ 交易發送中，請在 MetaMask 按下確認...";
+                // 注意：這裡的 .set() 必須和你的合約函數名稱一致
+                await myContract.methods.set(newValue).send({ from: userAccount });
+                
+                document.getElementById('statusMessage').innerText = "狀態：🎉 交易成功！變數已改變。";
+                getValue(); // 成功後自動刷新數值
+                
+            } catch (error) {
+                console.error(error);
+                document.getElementById('statusMessage').innerText = "狀態：❌ 交易失敗或被取消。";
+            }
         }
     </script>
 </body>
