@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Web3 Interaction</title>
+    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js" type="application/javascript"></script>
+</head>
+<body>
+    <h1>我的智能合約互動頁面</h1>
+    <p>目前合約數值: <span id="storedData">讀取中...</span></p>
+    
+    <input type="number" id="newValue" placeholder="輸入新數字">
+    <button onclick="updateValue()">更新數值</button>
+
+    <script>
+        const contractAddress = "你的合約地址";
+        const abi = [ /* 貼上你的 ABI */ ];
+
+        async function updateValue() {
+            // 1. 連接 MetaMask
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            await provider.send("eth_requestAccounts", []);
+            const signer = provider.getSigner();
+            
+            // 2. 初始化合約物件
+            const contract = new ethers.Contract(contractAddress, abi, signer);
+            
+            // 3. 呼叫合約函數
+            const value = document.getElementById('newValue').value;
+            const tx = await contract.set(value);
+            await tx.wait(); // 等待交易確認
+            alert("更新成功！");
+        }
+    </script>
+</body>
+</html>
