@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web3 HelloWorld 互動面板</title>
-    <!-- 引入最新的 Ethers.js v6 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.15.0/ethers.umd.min.js" type="application/javascript"></script>
     <style>
         :root {
@@ -114,13 +113,12 @@
     </div>
 
     <script>
-        // --- 設定區：請確認地址與 ABI ---
-        // 這是你在截圖中顯示的合約地址
+        // --- 設定區：已自動填入你的新合約與對應老師教學的 ABI ---
         const CONTRACT_ADDRESS = "0x45971897CA1b112fD45b861Ff1F087f1d1Fabb3b"; 
         
         const CONTRACT_ABI = [
-            { "inputs": [], "name": "message", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
-            { "inputs": [{ "internalType": "string", "name": "_newMessage", "type": "string" }], "name": "updateMessage", "outputs": [], "stateMutability": "nonpayable", "type": "function" }
+            { "inputs": [], "name": "say", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
+            { "inputs": [{ "internalType": "string", "name": "_say", "type": "string" }], "name": "update", "outputs": [], "stateMutability": "nonpayable", "type": "function" }
         ];
 
         // 定義 DOM 元素
@@ -175,13 +173,13 @@
             }
         }
 
-        // 函式：讀取訊息 (View)
+        // 函式：讀取訊息 (呼叫 say 函數)
         async function getMessage() {
             if (!contract) return;
             try {
                 log("讀取合約訊息中...");
-                // 呼叫合約中的 message() 變數
-                const msg = await contract.message();
+                // 修正點：呼叫符合老師合約的 say()
+                const msg = await contract.say();
                 messageOutput.textContent = `"${msg}"`;
                 log("訊息讀取成功。");
             } catch (error) {
@@ -189,7 +187,7 @@
             }
         }
 
-        // 函式：更新訊息 (Transaction)
+        // 函式：更新訊息 (呼叫 update 函數)
         async function updateMessage() {
             const newText = newMessageInput.value;
             if (!newText) {
@@ -199,7 +197,8 @@
 
             try {
                 log(`準備發送交易: "${newText}"`);
-                const tx = await contract.updateMessage(newText);
+                // 修正點：呼叫符合老師合約的 update()
+                const tx = await contract.update(newText);
                 log(`交易已發送！Hash: ${tx.hash.substring(0,16)}...`);
                 
                 log("等待區塊鏈確認交易 (通常需 15-30 秒)...");
@@ -219,7 +218,7 @@
         refreshBtn.addEventListener("click", getMessage);
 
         window.addEventListener("DOMContentLoaded", () => {
-            log("系統就緒，請先連接錢包。");
+            log("系統就緒，請先確認 MetaMask 切換至 Sepolia 後連接錢包。");
         });
     </script>
 </body>
