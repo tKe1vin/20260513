@@ -113,12 +113,12 @@
     </div>
 
     <script>
-        // --- 設定區：已自動填入你的新合約與對應老師教學的 ABI ---
-        const CONTRACT_ADDRESS = "0x6aA4b078c833f3bfF9d1335A7a6eE5dffb6Ce2F8"; 
+        // --- 已經直接帶入你的合約地址與對應的原始 ABI ---
+        const CONTRACT_ADDRESS = "0xEb6809F274bc3F65295DcE4D746fDC30A2e49381"; 
         
         const CONTRACT_ABI = [
-            { "inputs": [], "name": "say", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
-            { "inputs": [{ "internalType": "string", "name": "_say", "type": "string" }], "name": "update", "outputs": [], "stateMutability": "nonpayable", "type": "function" }
+            { "inputs": [], "name": "message", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
+            { "inputs": [{ "internalType": "string", "name": "_newMessage", "type": "string" }], "name": "updateMessage", "outputs": [], "stateMutability": "nonpayable", "type": "function" }
         ];
 
         // 定義 DOM 元素
@@ -151,7 +151,6 @@
                 log("正在請求 MetaMask 授權...");
                 await window.ethereum.request({ method: "eth_requestAccounts" });
                 
-                // Ethers v6 語法
                 provider = new ethers.BrowserProvider(window.ethereum);
                 signer = await provider.getSigner();
                 
@@ -160,7 +159,6 @@
                 const address = await signer.getAddress();
                 log(`成功連接！地址: ${address.substring(0,6)}...${address.substring(38)}`);
                 
-                // 更新 UI 狀態
                 statusDot.classList.add("active");
                 statusText.textContent = "連線狀態：已連結 Sepolia 網路";
                 connectBtn.textContent = "錢包已連結";
@@ -173,13 +171,12 @@
             }
         }
 
-        // 函式：讀取訊息 (呼叫 say 函數)
+        // 函式：讀取訊息 (改成呼叫 message 函數)
         async function getMessage() {
             if (!contract) return;
             try {
                 log("讀取合約訊息中...");
-                // 修正點：呼叫符合老師合約的 say()
-                const msg = await contract.say();
+                const msg = await contract.message();
                 messageOutput.textContent = `"${msg}"`;
                 log("訊息讀取成功。");
             } catch (error) {
@@ -187,7 +184,7 @@
             }
         }
 
-        // 函式：更新訊息 (呼叫 update 函數)
+        // 函式：更新訊息 (改成呼叫 updateMessage 函數)
         async function updateMessage() {
             const newText = newMessageInput.value;
             if (!newText) {
@@ -197,8 +194,7 @@
 
             try {
                 log(`準備發送交易: "${newText}"`);
-                // 修正點：呼叫符合老師合約的 update()
-                const tx = await contract.update(newText);
+                const tx = await contract.updateMessage(newText);
                 log(`交易已發送！Hash: ${tx.hash.substring(0,16)}...`);
                 
                 log("等待區塊鏈確認交易 (通常需 15-30 秒)...");
@@ -206,7 +202,7 @@
                 log("✅ 交易確認完畢！");
                 
                 newMessageInput.value = "";
-                await getMessage(); // 更新畫面顯示
+                await getMessage(); 
             } catch (error) {
                 log(`交易出錯: ${error.message}`);
             }
